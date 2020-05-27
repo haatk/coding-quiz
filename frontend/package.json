@@ -6,7 +6,9 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "test:unit": "vue-cli-service test:unit",
+    "test:unit:ci": "npm run test:unit -- --ci --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura --coverageReporters=html",
     "test:e2e": "vue-cli-service test:e2e",
+    "test:e2e:ci": "npm run test:e2e -- --headless",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
@@ -39,6 +41,7 @@
     "eslint-plugin-prettier": "^3.1.3",
     "eslint-plugin-vue": "^6.2.2",
     "geckodriver": "^1.19.1",
+    "jest-junit": "^10.0.0",
     "lint-staged": "^9.5.0",
     "prettier": "^1.19.1",
     "sass": "^1.26.5",

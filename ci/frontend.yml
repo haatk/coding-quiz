@@ -1,0 +1,91 @@
+name: $(Date:yyyyMMdd)$(Rev:.rrr)-$(BuildID)
+
+variables:
+  appPath: "frontend"
+  agentImage: "ubuntu-18.04"
+  agentChromeVersion: 81
+
+resources:
+  repositories:
+    - repository: "self"
+
+stages:
+  - stage: "Build"
+    displayName: "Build"
+    jobs:
+      - job: "frontend"
+        displayName: "Frontend"
+        pool:
+          vmImage: "$(agentImage)"
+          demands: "npm"
+        steps:
+        - task: NodeTool@0
+          displayName: "use node 10"
+          inputs:
+            versionSpec: 10
+
+        - task: Npm@1
+          displayName: "npm install"
+          inputs:
+            workingDir: "$(appPath)"
+            verbose: false
+
+        - task: Npm@1
+          displayName: "npm lint"
+          inputs:
+            workingDir: "$(appPath)"
+            command: "custom"
+            customCommand: "run lint"
+
+        - task: Npm@1
+          displayName: "npm test:unit:ci"
+          inputs:
+            workingDir: "$(appPath)"
+            command: "custom"
+            customCommand: "run test:unit:ci"
+
+        - task: PublishTestResults@2
+          displayName: "publish unit tests"
+          inputs:
+            testResultsFiles: "$(appPath)/junit.xml"
+            testRunTitle: "unit tests"
+            failTaskOnFailedTests: true
+            mergeTestResults: true
+
+        - task: PublishCodeCoverageResults@1
+          displayName: "publish code coverage"
+          inputs:
+            codeCoverageTool: "Cobertura"
+            summaryFileLocation: "$(appPath)/coverage/cobertura-coverage.xml"
+            failIfCoverageEmpty: true
+
+        - script: |
+            google-chrome --version
+            cd $(appPath)
+            npm i --save-dev chromedriver@$(agentChromeVersion)
+          displayName: "set chromedriver version"
+
+        - task: Npm@1
+          displayName: "npm test:e2e:ci"
+          inputs:
+            workingDir: "$(appPath)"
+            command: "custom"
+            customCommand: "run test:e2e:ci"
+
+        - task: PublishTestResults@2
+          displayName: "publish e2e tests"
+          inputs:
+            testResultsFiles: "$(appPath)/tests/e2e/reports/*.xml"
+            testRunTitle: "e2e tests"
+            failTaskOnFailedTests: true
+            mergeTestResults: true
+
+        - task: Npm@1
+          displayName: "npm build"
+          inputs:
+            workingDir: "$(appPath)"
+            command: "custom"
+            customCommand: "run build"
+
+        - publish: "$(appPath)/dist" 
+          artifact: "frontend"
