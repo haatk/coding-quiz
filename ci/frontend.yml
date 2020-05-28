@@ -1,22 +1,28 @@
 name: $(Date:yyyyMMdd)$(Rev:.rrr)-$(BuildID)
 
 variables:
+  name: "codingquiz"
   appPath: "frontend"
-  agentImage: "ubuntu-18.04"
-  agentChromeVersion: 81
+  artifactName: "frontend"
+  buildAgentImage: "ubuntu-18.04"
+  buildAgentChromeVersion: 81
 
 resources:
   repositories:
     - repository: "self"
+      trigger:
+        paths:
+          include:
+          - "frontend/"
 
 stages:
-  - stage: "Build"
+  - stage: "build"
     displayName: "Build"
     jobs:
       - job: "frontend"
         displayName: "Frontend"
         pool:
-          vmImage: "$(agentImage)"
+          vmImage: "$(buildAgentImage)"
           demands: "npm"
         steps:
         - task: NodeTool@0
@@ -62,7 +68,7 @@ stages:
         - script: |
             google-chrome --version
             cd $(appPath)
-            npm i --save-dev chromedriver@$(agentChromeVersion)
+            npm i --save-dev chromedriver@$(buildAgentChromeVersion)
           displayName: "set chromedriver version"
 
         - task: Npm@1
@@ -88,4 +94,39 @@ stages:
             customCommand: "run build"
 
         - publish: "$(appPath)/dist" 
-          artifact: "frontend"
+          displayName: "publish artifact"
+          artifact: "$(artifactName)"
+
+  - stage: "deploy_development"
+    displayName: "Deploy development"
+    dependsOn: "build"
+    jobs:
+      - deployment: "development"
+        environment: "development"
+        pool:
+          vmImage: "windows-latest" # AzureFileCopy@3 doesn't work with ubuntu-latest
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: "frontend/environment-deploy.yml"
+                  parameters:
+                    artifactName: $(artifactName)
+                    storageAccountName: "st$(name)d"
+
+  - stage: "deploy_test"
+    displayName: "Deploy test"
+    dependsOn: "deploy_development"
+    jobs:
+    - deployment: "test"
+      environment: "test"
+      pool:
+        vmImage: "windows-latest"
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - template: "frontend/environment-deploy.yml"
+                parameters:
+                  artifactName: $(artifactName)
+                  storageAccountName: "st$(name)t"

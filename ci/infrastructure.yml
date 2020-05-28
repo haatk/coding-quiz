@@ -1,0 +1,50 @@
+name: $(Date:yyyyMMdd)$(Rev:.rrr)-$(BuildID)
+
+variables:
+  name: "codingquiz"
+  location: "westeurope"
+
+resources:
+  repositories:
+    - repository: "self"
+      trigger:
+        paths:
+          include:
+          - "ci/"
+          - "infrastructure/"
+
+
+stages:
+  - stage: "deploy_development"
+    displayName: "Deploy development"
+    jobs:
+      - deployment: "development"
+        environment: "development"
+        pool:
+          vmImage: "ubuntu-latest"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: "infrastructure/environment.yml"
+                  parameters:
+                    resourceGroupName: "rg-$(name)-d"
+                    storageAccountName: "st$(name)d"
+                    location: "$(location)"
+  - stage: "deploy_test"
+    displayName: "Deploy test"
+    dependsOn: "deploy_development"
+    jobs:
+      - deployment: "test"
+        environment: "test"
+        pool:
+          vmImage: "ubuntu-latest"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: "infrastructure/environment.yml"
+                  parameters:
+                    resourceGroupName: "rg-$(name)-t"
+                    storageAccountName: "st$(name)t"
+                    location: "$(location)"

@@ -1,0 +1,29 @@
+parameters:
+  resourceGroupName: ''
+  storageAccountName: ''
+  location: ''
+
+steps:
+  - checkout: self
+  - task: AzureResourceGroupDeployment@2
+    displayName: "create/update resources template"
+    inputs:
+      azureSubscription: "AzureSubscription"
+      action: "Create Or Update Resource Group"
+      resourceGroupName: "${{ parameters.resourceGroupName }}"
+      location: "${{ parameters.location }}"
+      templateLocation: "Linked artifact"
+      csmFile: "infrastructure/azuredeploy.json"
+      overrideParameters: "-storageAccountName ${{ parameters.storageAccountName }}"
+      
+  - task: AzureCLI@2
+    displayName: "enable static website"
+    inputs:
+      azureSubscription: "AzureSubscription"
+      scriptType: "bash"
+      scriptLocation: "inlineScript"
+      inlineScript: |
+        az storage blob service-properties update \
+            --account-name ${{ parameters.storageAccountName }} \
+            --static-website \
+            --index-document "index.html"

@@ -1,0 +1,16 @@
+parameters:
+  artifactName: ""
+  storageAccountName: ""
+
+steps:
+  - download: current
+    artifact: "${{ parameters.artifactName }}"
+    displayName: "download artifact"
+  - task: AzureFileCopy@3
+    displayName: "copy files to blob storage"
+    inputs:
+      SourcePath: "$(Agent.BuildDirectory)/${{ parameters.artifactName }}"
+      azureSubscription: "AzureSubscription"
+      Destination: "AzureBlob"
+      storage: "${{ parameters.storageAccountName }}"
+      ContainerName: "$web"
