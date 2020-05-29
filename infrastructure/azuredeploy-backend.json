@@ -8,6 +8,9 @@
         },
         "applicationInsightsName": {
             "type": "string"
+        },
+        "containerRegistryName": {
+            "type": "string"
         }
     },
     "resources": [

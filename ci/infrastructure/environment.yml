@@ -1,19 +1,20 @@
 parameters:
   resourceGroupName: ''
   storageAccountName: ''
+  containerRegistryName: ''
   location: ''
 
 steps:
   - checkout: self
   - task: AzureResourceGroupDeployment@2
-    displayName: "create/update resources template"
+    displayName: "create/update resources frontend"
     inputs:
       azureSubscription: "AzureSubscription"
       action: "Create Or Update Resource Group"
       resourceGroupName: "${{ parameters.resourceGroupName }}"
       location: "${{ parameters.location }}"
       templateLocation: "Linked artifact"
-      csmFile: "infrastructure/azuredeploy.json"
+      csmFile: "infrastructure/azuredeploy-frontend.json"
       overrideParameters: "-storageAccountName ${{ parameters.storageAccountName }}"
       
   - task: AzureCLI@2
@@ -27,3 +28,16 @@ steps:
             --account-name ${{ parameters.storageAccountName }} \
             --static-website \
             --index-document "index.html"
+
+  - task: AzureResourceGroupDeployment@2
+    displayName: "create/update resources backend"
+    inputs:
+      azureSubscription: "AzureSubscription"
+      action: "Create Or Update Resource Group"
+      resourceGroupName: "${{ parameters.resourceGroupName }}"
+      location: "${{ parameters.location }}"
+      templateLocation: "Linked artifact"
+      csmFile: "infrastructure/azuredeploy-backend.json"
+      overrideParameters: |
+        -applicationInsightsName ${{ parameters.applicationInsightsName }}
+        -containerRegistryName ${{ parameters.containerRegistryName }}
